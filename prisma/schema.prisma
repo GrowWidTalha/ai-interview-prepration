@@ -1,14 +1,14 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
-
 
 model User {
   id            String     @id @default(cuid())
@@ -32,10 +32,13 @@ model Interview {
   projectDetails    String?  // For sales calls (URL to uploaded PDF)
   level             String?  // "beginner", "intermediate", "advanced"
   questionCount     Int
+  userResponses     Json?
   difficulty        String   // "easy", "medium", "hard"
   status            String   // "scheduled", "completed", "cancelled"
   score             Int?
-  feedback          Json?
+  feedback          Json?    // Detailed feedback from the interview
+  questions         Json     // Array of generated questions
+  metadata          Json?    // Additional metadata from the generator
   confidenceScore   Int?
   enthusiasmScore   Int?
   communicationScore Int?

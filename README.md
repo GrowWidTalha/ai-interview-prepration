@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎙️ AI-Based Interview Prep Platform
 
-## Getting Started
+Welcome to the voice-driven AI interview prep platform! 🚀 Designed to simulate real-world interview scenarios, this tool helps you sharpen technical knowledge, polish sales pitches, and practice spoken English — all through natural voice interactions powered by VAPI AI.
 
-First, run the development server:
+## 🔍 Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+When I first built the backend in JavaScript, it was a fun prototype. But for a **new challenge**, I rewrote the some backend in **Python** using **FastAPI**. This rewrite not only improved performance and maintainability but also deepened my Python skills and improved agents performance.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Live Backend API**: [https://your-backend-api-link.com](https://your-backend-api-link.com)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* **🤖 Voice-Based Interview Agent**
 
-## Learn More
+  * Powered by VAPI AI for smooth, real-time voice prompts and feedback.
+* **💻 Technical Interviews** (✅ ENABLED)
 
-To learn more about Next.js, take a look at the following resources:
+  * Tackle coding, algorithm, and system design questions.
+* **📞 Sales Call Interviews** (🚧 DISABLED)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+  * Role-play sales pitches, objection handling, and closing techniques. *(Coming back in a future update!)*
+* **🗣️ English Prep Interviews** (🚧 DISABLED)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+  * Practice fluency, vocabulary, and pronunciation for confident conversation. *(Reactivating soon!)*
 
-## Deploy on Vercel
+> The **Sales Call** and **English Prep** modes worked flawlessly in the old JavaScript backend but are temporarily paused due to limited time resources. Stay tuned — they’ll be back stronger!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔧 Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* **Frontend**: Next.js, Tailwind CSS, ShadCN UI
+* **Database & ORM**: PostgreSQL, Prisma
+* **Backend**: Python, FastAPI, OpenAI Agents SDK
+* **Voice AI**: VAPI AI
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+* **Node.js ≥ 18.x**
+* **Python ≥ 3.10**
+* **PostgreSQL ≥ 13**
+
+### Installation
+
+1. **Clone the repo**
+
+   ```bash
+   git clone https://github.com/yourusername/ai-interview-prep.git
+   cd ai-interview-prep
+   ```
+
+2. **Setup Backend (Python)**
+
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # Linux/macOS
+   venv\Scripts\activate    # Windows
+   pip install -r requirements.txt
+   cp .env.example .env       # Add DB URL & API keys
+   alembic upgrade head       # Run migrations
+   uvicorn main:app --reload  # Start server
+   ```
+
+3. **Setup Frontend (Next.js)**
+
+   ```bash
+   cd ../frontend
+   npm install
+   cp .env.local.example .env.local  # Set NEXT_PUBLIC_API_URL
+   npm run dev                        # Start dev server
+   ```
+
+## 🎯 Usage
+
+1. Visit `http://localhost:3000` in your browser.
+2. Choose an interview mode (Technical is active; others coming soon!).
+3. Allow microphone access for voice interaction.
+4. Engage with the AI — speak, listen, and receive instant feedback! 🎧
+
+## 📅 Future Roadmap
+
+* 🔄 **Re-enable Sales Call & English Prep** modes with new question banks.
+* 🌐 **Multi-language support** for non-English interviews.
+* 🔒 **User authentication** and **progress tracking** dashboards.
+* 📊 **Analytics**: Export performance reports and track improvements.
+* 🤝 **Community features**: Peer review and shared mock sessions.
+
+## 🤝 Contributing
+
+Your contributions & feedback are welcome! Please open an issue or PR to:
+
+* Report bugs 🐞
+* Suggest new question categories 💡
+* Improve UI/UX 🎨
+
+## 📄 License
+
+Licensed under the MIT License. See [LICENSE](LICENSE) for details.

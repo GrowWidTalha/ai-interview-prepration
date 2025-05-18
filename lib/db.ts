@@ -1,5 +1,5 @@
 "use server"
-import { db as prisma} from "./prisma"
+import { db as prisma } from "./prisma"
 import { auth, currentUser } from "@clerk/nextjs/server"
 
 // Get the current user from Clerk and find or create the user in our database
@@ -108,11 +108,16 @@ export async function createInterview(data: any) {
       throw new Error("User not authenticated")
     }
 
+    // Extract questions and remove pdfUrl if present
+    const { questions, pdfUrl, ...interviewData } = data
+
     const interview = await prisma.interview.create({
       data: {
-        ...data,
+        ...interviewData,
         userId: user.id,
+        // pdfUrl: interviewData.pdfUrl || "null",
         status: "scheduled",
+        questions: questions || null, // Store questions as JSON
       },
     })
 
@@ -155,15 +160,29 @@ export async function updateInterviewResults(id: string, results: any) {
       throw new Error("User not authenticated")
     }
 
+    // Extract metrics and tips from results to include in feedback
+    const { metrics, tips, summary, ...otherResults } = results
+
+    // Prepare the data to update
+    const updateData = {
+      ...otherResults,
+      status: "completed",
+      completedAt: new Date(),
+      userResponses: results.userResponses || null,
+      // Include metrics, tips, and summary in the feedback JSON
+      feedback: {
+        ...(results.feedback || {}),
+        metrics: metrics || {},
+        tips: tips || [],
+        summary: summary || "",
+      },
+    }
+
     const interview = await prisma.interview.update({
       where: {
         id,
       },
-      data: {
-        status: "completed",
-        completedAt: new Date(),
-        ...results,
-      },
+      data: updateData,
     })
 
     return interview

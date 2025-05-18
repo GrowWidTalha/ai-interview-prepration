@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,12 +20,18 @@ import {
     Tooltip,
     Legend,
     ResponsiveContainer,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar,
 } from "recharts"
-import { ArrowLeft, Download, Share2, Loader2 } from "lucide-react"
+import { ArrowLeft, Download, Share2, Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { getInterviewById } from "@/lib/db"
 import { toast } from "sonner"
 
 const COLORS = ["#4f46e5", "#e5e7eb"]
+const RADAR_COLORS = ["#4f46e5", "#10b981", "#f59e0b"]
 
 // Helper function to get interview type label
 const getInterviewTypeLabel = (interview: any) => {
@@ -69,7 +76,6 @@ export function InterviewResultsContent() {
                     router.push("/dashboard")
                     return
                 }
-
                 if (interviewData.status !== "completed") {
                     toast.error("Error", {
                         description: "This interview has not been completed yet",
@@ -77,7 +83,6 @@ export function InterviewResultsContent() {
                     router.push("/dashboard")
                     return
                 }
-
                 setInterview(interviewData)
             } catch (error) {
                 console.error("Error fetching interview:", error)
@@ -100,88 +105,162 @@ export function InterviewResultsContent() {
         ]
         : []
 
-    const skillsData = interview
-        ? [
-            { name: "Technical Knowledge", score: interview.score || 75 },
-            { name: "Communication", score: interview.communicationScore || 60 },
-            { name: "Self-Awareness", score: interview.selfAwarenessScore || 80 },
-            { name: "Enthusiasm", score: interview.enthusiasmScore || 90 },
-        ]
-        : []
+    // Prepare radar data based on interview type
+    const getRadarData = () => {
+        if (!interview) return []
 
-    // Mock feedback data (in a real app, this would come from the database)
-    const feedbackData = interview
-        ? {
-            overallScore: interview.score || 72,
-            successRate: interview.successRate || 68,
-            metrics: {
-                enthusiasm: interview.enthusiasmScore || 14,
-                communication: interview.communicationScore || 15,
-                selfAwareness: interview.selfAwarenessScore || 16,
-                technicalSkills: 17,
-                problemSolving: 18,
-            },
-            feedback: [
+        if (interview.type === "job") {
+            return [
                 {
-                    category: "Enthusiasm & Interest",
-                    score: interview.enthusiasmScore || 14,
-                    maxScore: 20,
-                    comments: [
-                        "You showed genuine interest in the role and company.",
-                        "Consider researching more about the company's recent projects.",
-                        "Your passion for the industry came through clearly.",
-                    ],
+                    subject: "Technical",
+                    A: interview.metrics?.technicalKnowledge || 15,
+                    fullMark: 20,
                 },
                 {
-                    category: "Communication Skills",
-                    score: interview.communicationScore || 15,
-                    maxScore: 20,
-                    comments: [
-                        "You articulated your thoughts clearly for most questions.",
-                        "Try to use more concrete examples in your responses.",
-                        "Your responses were concise but sometimes lacked depth.",
-                    ],
+                    subject: "Communication",
+                    A: interview.communicationScore || 16,
+                    fullMark: 20,
                 },
                 {
-                    category: "Self-Awareness & Reflection",
-                    score: interview.selfAwarenessScore || 16,
-                    maxScore: 20,
-                    comments: [
-                        "You demonstrated good awareness of your strengths.",
-                        "Your discussion of weaknesses was honest but could be more strategic.",
-                        "Good reflection on past experiences and lessons learned.",
-                    ],
+                    subject: "Problem Solving",
+                    A: interview.metrics?.problemSolving || 14,
+                    fullMark: 20,
                 },
                 {
-                    category: "Technical Skills",
-                    score: 17,
-                    maxScore: 20,
-                    comments: [
-                        "Strong understanding of core concepts.",
-                        "Consider deepening knowledge in system design.",
-                        "Good problem-solving approach to technical questions.",
-                    ],
+                    subject: "Cultural Fit",
+                    A: interview.metrics?.culturalFit || 17,
+                    fullMark: 20,
                 },
                 {
-                    category: "Problem Solving",
-                    score: 18,
-                    maxScore: 20,
-                    comments: [
-                        "Excellent analytical thinking demonstrated.",
-                        "You broke down complex problems effectively.",
-                        "Consider exploring multiple solutions before settling on one.",
-                    ],
+                    subject: "Leadership",
+                    A: interview.metrics?.leadershipPotential || 13,
+                    fullMark: 20,
                 },
-            ],
-            tips: [
-                "Practice the STAR method (Situation, Task, Action, Result) for behavioral questions.",
-                "Research the company more thoroughly before your next interview.",
-                "Prepare 3-5 concrete examples of past achievements that highlight your skills.",
-                "Work on explaining technical concepts in simpler terms.",
-                "Prepare thoughtful questions to ask the interviewer at the end.",
-            ],
+            ]
+        } else if (interview.type === "sales") {
+            return [
+                {
+                    subject: "Product Knowledge",
+                    A: interview.metrics?.productKnowledge || 16,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Objection Handling",
+                    A: interview.metrics?.objectionHandling || 14,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Closing Ability",
+                    A: interview.metrics?.closingAbility || 13,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Relationship",
+                    A: interview.metrics?.relationshipBuilding || 17,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Value Proposition",
+                    A: interview.metrics?.valuePropositionClarity || 15,
+                    fullMark: 20,
+                },
+            ]
+        } else if (interview.type === "english") {
+            return [
+                {
+                    subject: "Grammar",
+                    A: interview.metrics?.grammarAccuracy || 15,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Vocabulary",
+                    A: interview.metrics?.vocabularyRange || 16,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Pronunciation",
+                    A: interview.metrics?.pronunciation || 14,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Fluency",
+                    A: interview.metrics?.fluency || 17,
+                    fullMark: 20,
+                },
+                {
+                    subject: "Comprehension",
+                    A: interview.metrics?.comprehension || 18,
+                    fullMark: 20,
+                },
+            ]
         }
-        : null
+
+        // Default radar data
+        return [
+            {
+                subject: "Communication",
+                A: interview.communicationScore || 16,
+                fullMark: 20,
+            },
+            {
+                subject: "Enthusiasm",
+                A: interview.enthusiasmScore || 14,
+                fullMark: 20,
+            },
+            {
+                subject: "Self-Awareness",
+                A: interview.selfAwarenessScore || 15,
+                fullMark: 20,
+            },
+            {
+                subject: "Confidence",
+                A: interview.confidenceScore / 5 || 14,
+                fullMark: 20,
+            },
+            {
+                subject: "Overall",
+                A: interview.score / 5 || 15,
+                fullMark: 20,
+            },
+        ]
+    }
+
+    const radarData = getRadarData()
+
+    // Get metrics based on interview type
+    const getMetricsData = () => {
+        if (!interview) return []
+
+        const baseMetrics = [
+            { name: "Communication", score: interview.communicationScore || 15 },
+            { name: "Enthusiasm", score: interview.enthusiasmScore || 14 },
+            { name: "Self-Awareness", score: interview.selfAwarenessScore || 16 },
+        ]
+
+        if (interview.type === "job") {
+            return [
+                ...baseMetrics,
+                { name: "Technical Knowledge", score: interview.metrics?.technicalKnowledge || 15 },
+                { name: "Problem Solving", score: interview.metrics?.problemSolving || 14 },
+            ]
+        } else if (interview.type === "sales") {
+            return [
+                ...baseMetrics,
+                { name: "Product Knowledge", score: interview.metrics?.productKnowledge || 16 },
+                { name: "Objection Handling", score: interview.metrics?.objectionHandling || 14 },
+            ]
+        } else if (interview.type === "english") {
+            return [
+                ...baseMetrics,
+                { name: "Grammar", score: interview.metrics?.grammarAccuracy || 15 },
+                { name: "Vocabulary", score: interview.metrics?.vocabularyRange || 16 },
+            ]
+        }
+
+        return baseMetrics
+    }
+
+    const metricsData = getMetricsData()
 
     if (isLoading) {
         return (
@@ -194,7 +273,7 @@ export function InterviewResultsContent() {
         )
     }
 
-    if (!interview || !feedbackData) {
+    if (!interview) {
         return (
             <div className="container mx-auto py-10 px-4">
                 <div className="text-center">
@@ -212,7 +291,12 @@ export function InterviewResultsContent() {
 
     return (
         <div className="container mx-auto py-10 px-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+            >
                 <div>
                     <h1 className="text-3xl font-bold">Interview Results</h1>
                     <p className="text-muted-foreground">
@@ -233,129 +317,145 @@ export function InterviewResultsContent() {
                         </Button>
                     </Link>
                 </div>
-            </div>
+            </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Overall Score</CardTitle>
-                        <CardDescription>Your interview performance</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-center h-32">
-                            <div className="relative flex flex-col items-center justify-center">
-                                <svg className="w-32 h-32">
-                                    <circle
-                                        className="text-muted stroke-current"
-                                        strokeWidth="8"
-                                        stroke="currentColor"
-                                        fill="transparent"
-                                        r="58"
-                                        cx="64"
-                                        cy="64"
-                                    />
-                                    <circle
-                                        className="text-primary stroke-current"
-                                        strokeWidth="8"
-                                        strokeDasharray={`${feedbackData.overallScore * 3.65} 365`}
-                                        strokeLinecap="round"
-                                        stroke="currentColor"
-                                        fill="transparent"
-                                        r="58"
-                                        cx="64"
-                                        cy="64"
-                                    />
-                                </svg>
-                                <div className="absolute flex flex-col items-center">
-                                    <span className="text-3xl font-bold">{feedbackData.overallScore}%</span>
-                                    <span className="text-sm text-muted-foreground">
-                                        {feedbackData.overallScore >= 80
-                                            ? "Excellent"
-                                            : feedbackData.overallScore >= 60
-                                                ? "Good"
-                                                : "Needs Improvement"}
-                                    </span>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Overall Score</CardTitle>
+                            <CardDescription>Your interview performance</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-center h-32">
+                                <div className="relative flex flex-col items-center justify-center">
+                                    <svg className="w-32 h-32">
+                                        <circle
+                                            className="text-muted stroke-current"
+                                            strokeWidth="8"
+                                            stroke="currentColor"
+                                            fill="transparent"
+                                            r="58"
+                                            cx="64"
+                                            cy="64"
+                                        />
+                                        <circle
+                                            className="text-primary stroke-current"
+                                            strokeWidth="8"
+                                            strokeDasharray={`${interview.score * 3.65} 365`}
+                                            strokeLinecap="round"
+                                            stroke="currentColor"
+                                            fill="transparent"
+                                            r="58"
+                                            cx="64"
+                                            cy="64"
+                                        />
+                                    </svg>
+                                    <div className="absolute flex flex-col items-center">
+                                        <span className="text-3xl font-bold">{interview.score}%</span>
+                                        <span className="text-sm text-muted-foreground">
+                                            {interview.score >= 80 ? "Excellent" : interview.score >= 60 ? "Good" : "Needs Improvement"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </motion.div>
 
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Success Rate</CardTitle>
-                        <CardDescription>Likelihood of passing similar interviews</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-center h-32">
-                            <div className="relative flex flex-col items-center justify-center">
-                                <svg className="w-32 h-32">
-                                    <circle
-                                        className="text-muted stroke-current"
-                                        strokeWidth="8"
-                                        stroke="currentColor"
-                                        fill="transparent"
-                                        r="58"
-                                        cx="64"
-                                        cy="64"
-                                    />
-                                    <circle
-                                        className="text-green-500 stroke-current"
-                                        strokeWidth="8"
-                                        strokeDasharray={`${feedbackData.successRate * 3.65} 365`}
-                                        strokeLinecap="round"
-                                        stroke="currentColor"
-                                        fill="transparent"
-                                        r="58"
-                                        cx="64"
-                                        cy="64"
-                                    />
-                                </svg>
-                                <div className="absolute flex flex-col items-center">
-                                    <span className="text-3xl font-bold">{feedbackData.successRate}%</span>
-                                    <span className="text-sm text-muted-foreground">
-                                        {feedbackData.successRate >= 80
-                                            ? "Excellent"
-                                            : feedbackData.successRate >= 60
-                                                ? "Promising"
-                                                : "Needs Work"}
-                                    </span>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Success Rate</CardTitle>
+                            <CardDescription>Likelihood of passing similar interviews</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-center h-32">
+                                <div className="relative flex flex-col items-center justify-center">
+                                    <svg className="w-32 h-32">
+                                        <circle
+                                            className="text-muted stroke-current"
+                                            strokeWidth="8"
+                                            stroke="currentColor"
+                                            fill="transparent"
+                                            r="58"
+                                            cx="64"
+                                            cy="64"
+                                        />
+                                        <circle
+                                            className="text-green-500 stroke-current"
+                                            strokeWidth="8"
+                                            strokeDasharray={`${interview.successRate * 3.65} 365`}
+                                            strokeLinecap="round"
+                                            stroke="currentColor"
+                                            fill="transparent"
+                                            r="58"
+                                            cx="64"
+                                            cy="64"
+                                        />
+                                    </svg>
+                                    <div className="absolute flex flex-col items-center">
+                                        <span className="text-3xl font-bold">{interview.successRate}%</span>
+                                        <span className="text-sm text-muted-foreground">
+                                            {interview.successRate >= 80
+                                                ? "Excellent"
+                                                : interview.successRate >= 60
+                                                    ? "Promising"
+                                                    : "Needs Work"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </motion.div>
 
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Confidence Analysis</CardTitle>
-                        <CardDescription>How confident you appeared during the interview</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-center h-32">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={confidenceData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={40}
-                                        outerRadius={60}
-                                        fill="#8884d8"
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {confidenceData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Confidence Analysis</CardTitle>
+                            <CardDescription>How confident you appeared during the interview</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-center h-32">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={confidenceData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={40}
+                                            outerRadius={60}
+                                            fill="#8884d8"
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            animationBegin={300}
+                                            animationDuration={1500}
+                                        >
+                                            {confidenceData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </motion.div>
             </div>
 
             <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
@@ -363,123 +463,290 @@ export function InterviewResultsContent() {
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="feedback">Detailed Feedback</TabsTrigger>
                     <TabsTrigger value="tips">Improvement Tips</TabsTrigger>
+                    <TabsTrigger value="responses">Your Responses</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Performance Metrics</CardTitle>
-                            <CardDescription>Breakdown of your performance across key areas</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>Enthusiasm & Interest</span>
-                                        <span>{feedbackData.metrics.enthusiasm}/20</span>
-                                    </div>
-                                    <Progress value={(feedbackData.metrics.enthusiasm / 20) * 100} className="h-2" />
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Performance Summary</CardTitle>
+                                <CardDescription>Overall assessment of your interview performance</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="bg-muted/20 p-4 rounded-lg border mb-6">
+                                    <p className="text-lg italic">{interview.feedback?.summary || "No summary available."}</p>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>Communication Skills</span>
-                                        <span>{feedbackData.metrics.communication}/20</span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h3 className="text-lg font-medium mb-3">Key Strengths</h3>
+                                        <ul className="space-y-2">
+                                            {interview.feedback?.strengths?.map((strength: string, index: number) => (
+                                                <li key={index} className="flex items-start gap-2">
+                                                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                                    <span>{strength}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                    <Progress value={(feedbackData.metrics.communication / 20) * 100} className="h-2" />
-                                </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>Self-Awareness & Reflection</span>
-                                        <span>{feedbackData.metrics.selfAwareness}/20</span>
+                                    <div>
+                                        <h3 className="text-lg font-medium mb-3">Areas for Improvement</h3>
+                                        <ul className="space-y-2">
+                                            {interview.feedback?.improvements?.map((improvement: string, index: number) => (
+                                                <li key={index} className="flex items-start gap-2">
+                                                    <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                                    <span>{improvement}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                    <Progress value={(feedbackData.metrics.selfAwareness / 20) * 100} className="h-2" />
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>Technical Skills</span>
-                                        <span>{feedbackData.metrics.technicalSkills}/20</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.1 }}
+                        >
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Performance Metrics</CardTitle>
+                                    <CardDescription>Breakdown of your performance across key areas</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-6">
+                                        {Object.entries(interview.feedback?.metrics || {}).map(
+                                            ([key, value]: [string, any], index: number) => (
+                                                <div key={key} className="space-y-2">
+                                                    <div className="flex justify-between">
+                                                        <span className="capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                                                        <span>{value}/20</span>
+                                                    </div>
+                                                    <Progress value={(value / 20) * 100} className="h-2" />
+                                                </div>
+                                            ),
+                                        )}
+
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <span>Communication Skills</span>
+                                                <span>{interview.communicationScore}/20</span>
+                                            </div>
+                                            <Progress value={(interview.communicationScore / 20) * 100} className="h-2" />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <span>Enthusiasm & Interest</span>
+                                                <span>{interview.enthusiasmScore}/20</span>
+                                            </div>
+                                            <Progress value={(interview.enthusiasmScore / 20) * 100} className="h-2" />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <span>Self-Awareness</span>
+                                                <span>{interview.selfAwarenessScore}/20</span>
+                                            </div>
+                                            <Progress value={(interview.selfAwarenessScore / 20) * 100} className="h-2" />
+                                        </div>
                                     </div>
-                                    <Progress value={(feedbackData.metrics.technicalSkills / 20) * 100} className="h-2" />
-                                </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <span>Problem Solving</span>
-                                        <span>{feedbackData.metrics.problemSolving}/20</span>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                        >
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Skills Assessment</CardTitle>
+                                    <CardDescription>Visual representation of your skills</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="h-[350px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                                <PolarGrid />
+                                                <PolarAngleAxis dataKey="subject" />
+                                                <PolarRadiusAxis angle={30} domain={[0, 20]} />
+                                                <Radar
+                                                    name="Performance"
+                                                    dataKey="A"
+                                                    stroke="#4f46e5"
+                                                    fill="#4f46e5"
+                                                    fillOpacity={0.6}
+                                                    animationBegin={300}
+                                                    animationDuration={1500}
+                                                />
+                                                <Tooltip />
+                                            </RadarChart>
+                                        </ResponsiveContainer>
                                     </div>
-                                    <Progress value={(feedbackData.metrics.problemSolving / 20) * 100} className="h-2" />
-                                </div>
-                            </div>
-
-                            <div className="mt-8">
-                                <h3 className="text-lg font-medium mb-4">Skills Assessment</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart
-                                        data={skillsData}
-                                        margin={{
-                                            top: 5,
-                                            right: 30,
-                                            left: 20,
-                                            bottom: 5,
-                                        }}
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Bar dataKey="score" fill="#4f46e5" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="feedback" className="space-y-4">
-                    {feedbackData.feedback.map((item, index) => (
-                        <Card key={index}>
+                    {interview.feedback?.strengths && interview.feedback?.improvements && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Detailed Feedback</CardTitle>
+                                    <CardDescription>Comprehensive analysis of your interview performance</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div>
+                                        <h3 className="text-lg font-medium mb-3">Strengths</h3>
+                                        <ul className="space-y-3">
+                                            {interview.feedback.strengths.map((strength: string, index: number) => (
+                                                <li
+                                                    key={index}
+                                                    className="flex items-start gap-3 bg-green-50 dark:bg-green-950/20 p-3 rounded-lg"
+                                                >
+                                                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p>{strength}</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-lg font-medium mb-3">Areas for Improvement</h3>
+                                        <ul className="space-y-3">
+                                            {interview.feedback.improvements.map((improvement: string, index: number) => (
+                                                <li key={index} className="flex items-start gap-3 bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
+                                                    <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p>{improvement}</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <h3 className="text-lg font-medium mb-3">Performance Metrics</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <ResponsiveContainer width="100%" height={300}>
+                                                    <BarChart
+                                                        data={metricsData}
+                                                        margin={{
+                                                            top: 5,
+                                                            right: 30,
+                                                            left: 20,
+                                                            bottom: 5,
+                                                        }}
+                                                        layout="vertical"
+                                                    >
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis type="number" domain={[0, 20]} />
+                                                        <YAxis dataKey="name" type="category" width={150} />
+                                                        <Tooltip />
+                                                        <Bar dataKey="score" fill="#4f46e5" animationBegin={300} animationDuration={1500} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h4 className="font-medium mb-1">Overall Score</h4>
+                                                    <div className="flex items-center gap-2">
+                                                        <Progress value={interview.score} className="h-2 flex-1" />
+                                                        <span className="text-sm font-medium w-10 text-right">{interview.score}%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="font-medium mb-1">Confidence</h4>
+                                                    <div className="flex items-center gap-2">
+                                                        <Progress value={interview.confidenceScore} className="h-2 flex-1" />
+                                                        <span className="text-sm font-medium w-10 text-right">{interview.confidenceScore}%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="font-medium mb-1">Success Rate</h4>
+                                                    <div className="flex items-center gap-2">
+                                                        <Progress value={interview.successRate} className="h-2 flex-1" />
+                                                        <span className="text-sm font-medium w-10 text-right">{interview.successRate}%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+                </TabsContent>
+
+                <TabsContent value="tips" className="space-y-4">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                        <Card>
                             <CardHeader>
-                                <CardTitle>{item.category}</CardTitle>
-                                <CardDescription>
-                                    Score: {item.score}/{item.maxScore}
-                                </CardDescription>
+                                <CardTitle>Improvement Tips</CardTitle>
+                                <CardDescription>Actionable advice to help you improve your interview performance</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <ul className="space-y-2">
-                                    {item.comments.map((comment, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <span className="text-primary mt-1">•</span>
-                                            <span>{comment}</span>
-                                        </li>
+                                <ul className="space-y-4">
+                                    {interview.feedback?.tips?.map((tip: string, index: number) => (
+                                        <motion.li
+                                            key={index}
+                                            className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/20 transition-colors"
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                                        >
+                                            <div className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                {index + 1}
+                                            </div>
+                                            <span>{tip}</span>
+                                        </motion.li>
                                     ))}
                                 </ul>
                             </CardContent>
                         </Card>
-                    ))}
+                    </motion.div>
                 </TabsContent>
 
-                <TabsContent value="tips" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Improvement Tips</CardTitle>
-                            <CardDescription>Actionable advice to help you improve your interview performance</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="space-y-4">
-                                {feedbackData.tips.map((tip, index) => (
-                                    <li key={index} className="flex items-start gap-3">
-                                        <div className="bg-primary/10 text-primary rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            {index + 1}
-                                        </div>
-                                        <span>{tip}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
+                <TabsContent value="responses" className="space-y-4">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Your Responses</CardTitle>
+                                <CardDescription>Review your answers to the interview questions</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-6">
+                                    {interview.userResponses?.map((response: any, index: number) => {
+                                        const question = interview.questions?.find((q: any) => q.id === response.questionId)
+                                        return (
+                                            <div key={index} className="border rounded-lg p-4 hover:bg-muted/10 transition-colors">
+                                                <h3 className="font-medium text-lg mb-2">Question {index + 1}:</h3>
+                                                <p className="mb-4 text-muted-foreground">{question?.text || "Unknown question"}</p>
+
+                                                <h4 className="font-medium mb-2">Your Response:</h4>
+                                                <p className="bg-muted/20 p-3 rounded-md">{response.response}</p>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 </TabsContent>
             </Tabs>
         </div>

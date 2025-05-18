@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "uploadthing/tw/v4";
+@source "../node_modules/@uploadthing/react/dist";
+/* * <-- depends on your project structure */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -177,3 +180,59 @@
     pointer-events: none;
   }
 }
+
+
+@layer utilities {
+    .animate-bounce {
+      animation: bounce 1s infinite;
+    }
+
+    .delay-0 {
+      animation-delay: 0ms;
+    }
+
+    .delay-150 {
+      animation-delay: 150ms;
+    }
+
+    .delay-300 {
+      animation-delay: 300ms;
+    }
+
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-in-out forwards;
+    }
+  }
+
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-25%);
+    }
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }

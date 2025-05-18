@@ -2,13 +2,17 @@
 
 import { z } from "zod"
 import { createInterview, updateInterviewResults, updateUserProfile as updateUserProfileDb } from "@/lib/db"
+import { currentUser } from "@clerk/nextjs/server"
+import { generateInterview, convertToPythonBackendFormat } from "@/lib/api-client"
 
 // Schema for interview creation
 const interviewSchema = z.object({
   type: z.enum(["job", "sales", "english"]),
+  clerkId: z.string(),
   subType: z.string().optional(),
   technologies: z.array(z.string()).optional(),
   projectDetails: z.string().optional(),
+  pdfUrl: z.string().optional(),
   level: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   questionCount: z.number().min(3).max(20),
   difficulty: z.enum(["easy", "medium", "hard"]),
@@ -27,11 +31,20 @@ export async function createInterviewAction(formData: FormData) {
     }
 
     // Prepare data for validation
+    const user = await currentUser()
+    if(!user){
+        throw new Error("user not found")
+        console.log(user)
+    }
+    console.log(user)
+
     const data = {
       type: rawData.type as string,
       subType: rawData.subType as string,
       technologies,
+      clerkId: user.id,
       projectDetails: rawData.projectDetails as string,
+      pdfUrl: rawData.pdfUrl as string,
       level: rawData.level as string,
       questionCount: Number.parseInt(rawData.questionCount as string, 10),
       difficulty: rawData.difficulty as string,
@@ -40,9 +53,16 @@ export async function createInterviewAction(formData: FormData) {
     // Validate data
     const validatedData = interviewSchema.parse(data)
 
-    // Create interview in database
-    const interview = await createInterview(validatedData)
+    // Generate questions first using the API
+    const { questions, metadata } = await generateInterview(validatedData.type, convertToPythonBackendFormat(validatedData));
 
+    const { clerkId, ...dataWithoutClerkId } = validatedData;
+
+    const interview = await createInterview({
+      ...dataWithoutClerkId,
+      questions: questions,
+      metadata: metadata,
+    });
     return { success: true, interviewId: interview.id }
   } catch (error) {
     console.error("Error creating interview:", error)
@@ -59,6 +79,14 @@ const resultsSchema = z.object({
   selfAwarenessScore: z.number().min(0).max(20),
   successRate: z.number().min(0).max(100),
   feedback: z.any(), // This would be more strictly typed in a real app
+  userResponses: z
+    .array(
+      z.object({
+        questionId: z.string(),
+        response: z.string(),
+      }),
+    )
+    .optional(),
 })
 
 // Update interview results action
