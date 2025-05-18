@@ -6,7 +6,11 @@ Welcome to the voice-driven AI interview prep platform! 🚀 Designed to simulat
 
 When I first built the backend in JavaScript, it was a fun prototype. But for a **new challenge**, I rewrote the some backend in **Python** using **FastAPI**. This rewrite not only improved performance and maintainability but also deepened my Python skills and improved agents performance.
 
-**Live Backend API**: [https://your-backend-api-link.com](https://your-backend-api-link.com)
+
+
+**Live frontend URL**: [https://prepai.talhaali.xyz/](https://prepai.talhaali.xyz/dashboard)
+
+**Live Backend API**: [https://interview-platform-backend-production.up.railway.app/](https://interview-platform-backend-production.up.railway.app/api/v1)
 
 ## 🛠️ Features
 
@@ -45,8 +49,8 @@ When I first built the backend in JavaScript, it was a fun prototype. But for a 
 1. **Clone the repo**
 
    ```bash
-   git clone https://github.com/yourusername/ai-interview-prep.git
-   cd ai-interview-prep
+   git clone https://github.com/GrowWidTalha/ai-interview-prepration
+   cd ai-interview-prepration
    ```
 
 2. **Setup Backend (Python)**
